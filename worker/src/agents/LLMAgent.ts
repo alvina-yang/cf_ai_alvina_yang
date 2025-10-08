@@ -41,12 +41,10 @@ export class LLMAgent implements DurableObject {
     try {
       const { message, sessionId, model = '@cf/meta/llama-3.3-70b-instruct-fp8-fast' } = await request.json() as any;
 
-      // Initialize SQL table if not exists
       await this.state.storage.sql.exec(
         'CREATE TABLE IF NOT EXISTS chat_sessions (id TEXT PRIMARY KEY, messages TEXT, created_at INTEGER, updated_at INTEGER)'
       );
 
-      // Get or create session
       let session: ChatSession;
       if (sessionId) {
         const cursor = await this.state.storage.sql.exec('SELECT * FROM chat_sessions WHERE id = ?', sessionId);
@@ -75,18 +73,14 @@ export class LLMAgent implements DurableObject {
         };
       }
 
-      // Add user message
       session.messages.push({ role: 'user', content: message });
 
-      // Call Cloudflare AI
       const aiResponse = await this.env.AI.run(model, {
         messages: session.messages,
       }) as any;
 
-      // Add assistant response
       session.messages.push({ role: 'assistant', content: aiResponse.response || aiResponse.text });
 
-      // Save session
       await this.state.storage.sql.exec(
         `INSERT OR REPLACE INTO chat_sessions (id, messages, created_at, updated_at) 
          VALUES (?, ?, ?, ?)`,

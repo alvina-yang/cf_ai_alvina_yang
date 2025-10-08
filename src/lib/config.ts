@@ -1,16 +1,6 @@
-/**
- * Application Configuration
- * Centralized configuration for the AgentFlow platform
- */
-
 export const config = {
-  // Worker URL - can be overridden by environment variable
   workerUrl: process.env.NEXT_PUBLIC_WORKER_URL || 'http://localhost:8787',
-  
-  // Default LLM models
   defaultModel: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
-  
-  // Available models
   availableModels: [
     {
       id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
@@ -28,18 +18,14 @@ export const config = {
       provider: 'Mistral AI',
     },
   ],
-  
-  // UI Configuration
   ui: {
     maxChatMessages: 100,
     maxWorkflowHistoryItems: 50,
-    autoSaveInterval: 30000, // 30 seconds
+    autoSaveInterval: 30000,
   },
-  
-  // Execution Configuration
   execution: {
     maxRetries: 3,
-    timeout: 300000, // 5 minutes
+    timeout: 300000,
   },
 } as const;
 

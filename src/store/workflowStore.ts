@@ -114,7 +114,7 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
       position,
       data: {
         ...getNodeDefaultData(type),
-        nodeType: type, // Store the actual node type for reference
+        nodeType: type,
       },
     };
 

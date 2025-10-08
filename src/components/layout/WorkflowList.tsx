@@ -47,7 +47,7 @@ export function WorkflowList({ isOpen, onClose }: WorkflowListProps) {
           position: n.position,
           data: {
             ...n.data,
-            nodeType: n.type, // Ensure nodeType is preserved
+            nodeType: n.type,
           },
         })),
         workflow.edges,

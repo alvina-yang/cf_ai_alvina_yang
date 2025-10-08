@@ -21,7 +21,6 @@ export default function Home() {
           <WorkflowBuilder />
         </ReactFlowProvider>
         
-        {/* Floating Chat Button */}
         {!isChatOpen && (
           <Button
             onClick={() => setIsChatOpen(true)}

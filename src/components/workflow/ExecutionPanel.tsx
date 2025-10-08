@@ -30,7 +30,6 @@ export function ExecutionPanel() {
     });
   };
 
-  // Track execution history
   useEffect(() => {
     if (isExecuting && currentExecutingNode) {
       setExecutionHistory((prev) => [
