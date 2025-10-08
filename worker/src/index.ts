@@ -1,7 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 
-// Durable Objects will be exported at the end
 export { WorkflowAgent } from './agents/WorkflowAgent';
 export { LLMAgent } from './agents/LLMAgent';
 
@@ -14,19 +13,16 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// Enable CORS for all routes
 app.use('*', cors({
   origin: ['http://localhost:3000', 'https://agentflow.pages.dev'],
   allowHeaders: ['Content-Type', 'Authorization'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 }));
 
-// Health check
 app.get('/health', (c) => {
   return c.json({ status: 'ok', timestamp: Date.now() });
 });
 
-// Chat endpoint (using LLMAgent)
 app.post('/api/chat', async (c) => {
   try {
     const { message, sessionId, context } = await c.req.json();
@@ -35,11 +31,9 @@ app.post('/api/chat', async (c) => {
       return c.json({ error: 'Message is required' }, 400);
     }
 
-    // Create or get LLM Agent instance
     const id = c.env.LLM_AGENT.idFromName(sessionId || crypto.randomUUID());
     const agent = c.env.LLM_AGENT.get(id);
 
-    // Call the chat endpoint
     const response = await agent.fetch(
       new Request('https://dummy/chat', {
         method: 'POST',
@@ -59,7 +53,6 @@ app.post('/api/chat', async (c) => {
   }
 });
 
-// Transcribe audio (for voice input)
 app.post('/api/transcribe', async (c) => {
   try {
     const formData = await c.req.formData();
@@ -69,7 +62,6 @@ app.post('/api/transcribe', async (c) => {
       return c.json({ error: 'Audio file is required' }, 400);
     }
 
-    // Use Cloudflare Workers AI for speech-to-text
     const arrayBuffer = await audioFile.arrayBuffer();
     const response = await c.env.AI.run('@cf/openai/whisper', {
       audio: Array.from(new Uint8Array(arrayBuffer)),
@@ -82,7 +74,6 @@ app.post('/api/transcribe', async (c) => {
   }
 });
 
-// Create a new workflow
 app.post('/api/workflows', async (c) => {
   try {
     const body = await c.req.json();
@@ -92,7 +83,6 @@ app.post('/api/workflows', async (c) => {
       return c.json({ error: 'Missing required fields' }, 400);
     }
 
-    // Store workflow definition in KV
     await c.env.WORKFLOWS_KV.put(
       `workflow:${id}`,
       JSON.stringify({ id, name, nodes, edges, createdAt: Date.now() })
@@ -105,7 +95,6 @@ app.post('/api/workflows', async (c) => {
   }
 });
 
-// Get workflow by ID
 app.get('/api/workflows/:id', async (c) => {
   try {
     const id = c.req.param('id');
@@ -122,7 +111,6 @@ app.get('/api/workflows/:id', async (c) => {
   }
 });
 
-// List all workflows
 app.get('/api/workflows', async (c) => {
   try {
     const list = await c.env.WORKFLOWS_KV.list({ prefix: 'workflow:' });
@@ -140,24 +128,20 @@ app.get('/api/workflows', async (c) => {
   }
 });
 
-// Execute a workflow
 app.post('/api/workflows/:id/execute', async (c) => {
   try {
     const workflowId = c.req.param('id');
     const { input } = await c.req.json();
 
-    // Get the workflow definition
     const workflow = await c.env.WORKFLOWS_KV.get(`workflow:${workflowId}`, 'json') as any;
 
     if (!workflow) {
       return c.json({ error: 'Workflow not found' }, 404);
     }
 
-    // Create a Durable Object instance for this execution
     const id = c.env.WORKFLOW_AGENT.idFromName(workflowId);
     const agent = c.env.WORKFLOW_AGENT.get(id);
 
-    // Execute the workflow
     const response = await agent.fetch(
       new Request('https://dummy/execute', {
         method: 'POST',
@@ -174,7 +158,6 @@ app.post('/api/workflows/:id/execute', async (c) => {
   }
 });
 
-// Get workflow execution status
 app.get('/api/workflows/:id/status', async (c) => {
   try {
     const workflowId = c.req.param('id');
@@ -193,7 +176,6 @@ app.get('/api/workflows/:id/status', async (c) => {
   }
 });
 
-// WebSocket endpoint for real-time updates
 app.get('/api/workflows/:id/ws', async (c) => {
   const upgradeHeader = c.req.header('Upgrade');
   if (upgradeHeader !== 'websocket') {

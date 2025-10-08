@@ -41,12 +41,10 @@ export class WorkflowAgent implements DurableObject {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
 
-    // Handle WebSocket upgrade
     if (request.headers.get('Upgrade') === 'websocket') {
       return this.handleWebSocket(request);
     }
 
-    // Handle regular HTTP requests
     if (url.pathname === '/execute' && request.method === 'POST') {
       return this.handleExecute(request);
     }
@@ -69,7 +67,6 @@ export class WorkflowAgent implements DurableObject {
       this.websockets.delete(server as any);
     });
 
-    // Send current execution state
     if (this.execution) {
       server.send(JSON.stringify({ type: 'state', data: this.execution }));
     }
@@ -84,7 +81,6 @@ export class WorkflowAgent implements DurableObject {
     try {
       const { workflow, input } = await request.json() as any;
 
-      // Initialize execution state
       this.execution = {
         status: 'running',
         currentNodeId: null,
@@ -93,10 +89,8 @@ export class WorkflowAgent implements DurableObject {
         startedAt: Date.now(),
       };
 
-      // Broadcast initial state
       this.broadcast({ type: 'execution_started', data: this.execution });
 
-      // Store execution in SQL
       await this.state.storage.sql.exec(
         'CREATE TABLE IF NOT EXISTS executions (id TEXT PRIMARY KEY, workflow_id TEXT, status TEXT, results TEXT, created_at INTEGER)'
       );
@@ -111,14 +105,11 @@ export class WorkflowAgent implements DurableObject {
         Date.now()
       );
 
-      // Execute the workflow
       const result = await this.executeWorkflow(workflow, input);
 
-      // Update execution state
       this.execution.status = 'completed';
       this.execution.completedAt = Date.now();
 
-      // Update SQL
       await this.state.storage.sql.exec(
         'UPDATE executions SET status = ?, results = ? WHERE id = ?',
         'completed',
@@ -126,7 +117,6 @@ export class WorkflowAgent implements DurableObject {
         executionId
       );
 
-      // Broadcast completion
       this.broadcast({ type: 'execution_completed', data: this.execution });
 
       return Response.json({ success: true, result, executionId });
@@ -159,7 +149,6 @@ export class WorkflowAgent implements DurableObject {
     const { nodes, edges } = workflow;
     const results: Record<string, any> = { input };
 
-    // Build adjacency list for graph traversal
     const adjacency = new Map<string, string[]>();
     edges.forEach((edge: WorkflowEdge) => {
       if (!adjacency.has(edge.source)) {
@@ -168,13 +157,11 @@ export class WorkflowAgent implements DurableObject {
       adjacency.get(edge.source)!.push(edge.target);
     });
 
-    // Find start node
     const startNode = nodes.find((n: WorkflowNode) => n.type === 'start');
     if (!startNode) {
       throw new Error('No start node found in workflow');
     }
 
-    // Execute nodes in topological order
     await this.executeNode(startNode, nodes, adjacency, results, input);
 
     return results;
@@ -193,7 +180,6 @@ export class WorkflowAgent implements DurableObject {
     let nodeResult: any;
 
     try {
-      // Execute based on node type
       switch (node.type) {
         case 'start':
           nodeResult = currentInput;
@@ -229,7 +215,6 @@ export class WorkflowAgent implements DurableObject {
         data: { nodeId: node.id, result: nodeResult } 
       });
 
-      // Execute child nodes
       const children = adjacency.get(node.id) || [];
       for (const childId of children) {
         const childNode = allNodes.find((n) => n.id === childId);
@@ -252,10 +237,8 @@ export class WorkflowAgent implements DurableObject {
   private async executeLLMNode(node: WorkflowNode, input: any): Promise<any> {
     const { prompt, model = '@cf/meta/llama-3.3-70b-instruct-fp8-fast', temperature = 0.7 } = node.data;
 
-    // Replace placeholders in prompt
     const processedPrompt = this.replacePlaceholders(prompt, input);
 
-    // Call Cloudflare AI
     const response = await this.env.AI.run(model, {
       messages: [
         { role: 'system', content: 'You are a helpful AI assistant in a workflow automation system.' },
@@ -336,7 +319,6 @@ export class WorkflowAgent implements DurableObject {
   }
 
   private evaluateCondition(condition: string, data: any): boolean {
-    // Simple condition evaluation (could be enhanced with a proper parser)
     try {
       const func = new Function('data', `return ${condition}`);
       return func(data);
