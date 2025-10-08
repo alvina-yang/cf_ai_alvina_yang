@@ -1,0 +1,61 @@
+{
+  "id": "content-analyzer",
+  "name": "AI Content Analyzer",
+  "description": "Fetches web content and analyzes it with AI",
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": { "x": 250, "y": 50 },
+      "data": {
+        "label": "Start"
+      }
+    },
+    {
+      "id": "http-1",
+      "type": "http",
+      "position": { "x": 250, "y": 150 },
+      "data": {
+        "label": "Fetch Content",
+        "url": "https://api.github.com/repos/{{repo}}",
+        "method": "GET",
+        "headers": {}
+      }
+    },
+    {
+      "id": "llm-1",
+      "type": "llm",
+      "position": { "x": 250, "y": 270 },
+      "data": {
+        "label": "Analyze Content",
+        "prompt": "Analyze this repository data and provide insights about activity, popularity, and purpose: {{data}}",
+        "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+        "temperature": 0.7
+      }
+    },
+    {
+      "id": "transform-1",
+      "type": "transform",
+      "position": { "x": 250, "y": 390 },
+      "data": {
+        "label": "Format Output",
+        "transformType": "json",
+        "config": {}
+      }
+    },
+    {
+      "id": "end-1",
+      "type": "end",
+      "position": { "x": 250, "y": 510 },
+      "data": {
+        "label": "End"
+      }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "start-1", "target": "http-1" },
+    { "id": "e2", "source": "http-1", "target": "llm-1" },
+    { "id": "e3", "source": "llm-1", "target": "transform-1" },
+    { "id": "e4", "source": "transform-1", "target": "end-1" }
+  ]
+}

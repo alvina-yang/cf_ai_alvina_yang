@@ -1,0 +1,80 @@
+{
+  "id": "data-pipeline",
+  "name": "ETL Data Pipeline",
+  "description": "Extract data, transform with AI, and process based on conditions",
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": { "x": 250, "y": 50 },
+      "data": { "label": "Start" }
+    },
+    {
+      "id": "http-1",
+      "type": "http",
+      "position": { "x": 250, "y": 150 },
+      "data": {
+        "label": "Extract Data",
+        "url": "https://api.example.com/data",
+        "method": "GET"
+      }
+    },
+    {
+      "id": "llm-1",
+      "type": "llm",
+      "position": { "x": 250, "y": 270 },
+      "data": {
+        "label": "AI Classification",
+        "prompt": "Classify this data item: {{data}}. Return only: HIGH, MEDIUM, or LOW",
+        "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+        "temperature": 0.3
+      }
+    },
+    {
+      "id": "condition-1",
+      "type": "condition",
+      "position": { "x": 250, "y": 390 },
+      "data": {
+        "label": "Priority Check",
+        "condition": "data.text.includes('HIGH')",
+        "trueValue": "urgent",
+        "falseValue": "normal"
+      }
+    },
+    {
+      "id": "http-2",
+      "type": "http",
+      "position": { "x": 100, "y": 510 },
+      "data": {
+        "label": "Urgent Webhook",
+        "url": "https://api.example.com/urgent",
+        "method": "POST"
+      }
+    },
+    {
+      "id": "http-3",
+      "type": "http",
+      "position": { "x": 400, "y": 510 },
+      "data": {
+        "label": "Normal Webhook",
+        "url": "https://api.example.com/normal",
+        "method": "POST"
+      }
+    },
+    {
+      "id": "end-1",
+      "type": "end",
+      "position": { "x": 250, "y": 630 },
+      "data": { "label": "End" }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "start-1", "target": "http-1" },
+    { "id": "e2", "source": "http-1", "target": "llm-1" },
+    { "id": "e3", "source": "llm-1", "target": "condition-1" },
+    { "id": "e4", "source": "condition-1", "target": "http-2", "sourceHandle": "true" },
+    { "id": "e5", "source": "condition-1", "target": "http-3", "sourceHandle": "false" },
+    { "id": "e6", "source": "http-2", "target": "end-1" },
+    { "id": "e7", "source": "http-3", "target": "end-1" }
+  ]
+}
